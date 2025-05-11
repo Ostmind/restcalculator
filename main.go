@@ -39,9 +39,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		calculation.Result = sum
 		calc = append(calc, calculation)
 		json.NewEncoder(w).Encode(calculation)
-		/*Проверка на то что у нас правда сохраняются операции в памяти
+		/*//Проверка на то что у нас правда сохраняются операции в памяти
 		for i := 0; i < len(calc); i++ {
-			fmt.Println(calc[i])
+			fmt.Println("Slice: ", calc[i].Numbers, "Operation: ", calc[i].Operation, "Result: ", calc[i].Result)
 		}*/
 	}
 }
