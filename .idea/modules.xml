@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/RESTCalculator.iml" filepath="$PROJECT_DIR$/RESTCalculator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/restcalculator.iml" filepath="$PROJECT_DIR$/restcalculator.iml" />
     </modules>
   </component>
 </project>
