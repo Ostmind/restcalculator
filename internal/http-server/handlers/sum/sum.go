@@ -1,36 +1,31 @@
-package handlers
+package sum
 
 import (
-	"context"
 	"encoding/json"
-	"github.com/labstack/echo/v4"
 	"log/slog"
 	"net/http"
-	"restcalculator/internal/http-server/logger"
 	"restcalculator/internal/http-server/model"
+
+	"github.com/labstack/echo/v4"
 )
 
 type SumController struct {
-	ctx    context.Context
-	logger *logger.Logger
+	logger *slog.Logger
 }
 
-func NewSumController(ctx context.Context, slogger *logger.Logger) *SumController {
-	return &SumController{
-		ctx:    ctx,
-		logger: slogger,
-	}
+func New(log *slog.Logger) *SumController {
+	return &SumController{log}
 }
 
-func (ctr *SumController) Sum(c echo.Context) error {
+func (ctr SumController) Sum(c echo.Context) error {
 	var (
 		req []model.Request
 		res model.Results
 	)
-	ctr.logger.Info("Get Request on Sum")
+
 	var sum float64
 	var calculation model.Calculator
-
+	ctr.logger.Info("Get Request for Sum")
 	err := json.NewDecoder(c.Request().Body).Decode(&req)
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
@@ -44,7 +39,6 @@ func (ctr *SumController) Sum(c echo.Context) error {
 
 	calculation.Operation = "+"
 	calculation.Result = sum
-	ctr.logger.Info("Get Sum: ", slog.Float64("Sum", sum))
 
 	res.Calc = append(res.Calc, calculation)
 

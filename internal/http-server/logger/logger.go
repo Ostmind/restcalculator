@@ -3,29 +3,33 @@ package logger
 import (
 	"log/slog"
 	"os"
-	"sync"
 )
 
 const (
 	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
 )
 
-type Logger struct {
-	*slog.Logger
-}
-
-var (
-	logger Logger
-	once   sync.Once
-)
-
-func Get() *Logger {
-	once.Do(func() {
-		var slogger *slog.Logger
-
-		slogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-
-		logger = Logger{slogger}
-	})
-	return &logger
+func SetupLogger(envType string) *slog.Logger {
+	var log *slog.Logger
+	switch envType {
+	case envLocal:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envDev:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	default:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	}
+	return log
 }

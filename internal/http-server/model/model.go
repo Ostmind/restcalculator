@@ -1,9 +1,9 @@
 package model
 
 type Calculator struct {
-	Numbers   []float64
-	Operation string
-	Result    float64
+	Numbers   []float64 `json:"numbers"`
+	Operation string    `json:"operation"`
+	Result    float64   `json:"result"`
 }
 
 type Results struct {
