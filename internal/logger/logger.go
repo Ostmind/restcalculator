@@ -13,6 +13,7 @@ const (
 
 func SetupLogger(envType string) *slog.Logger {
 	var log *slog.Logger
+
 	switch envType {
 	case envLocal:
 		log = slog.New(
