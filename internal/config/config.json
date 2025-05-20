@@ -1,5 +1,5 @@
 {
   "port": "8080",
-  "timeout": 10,
-  "envType": "local"
+  "timeout_seconds": 10,
+  "env_type": "local"
 }

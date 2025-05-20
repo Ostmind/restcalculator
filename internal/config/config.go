@@ -8,8 +8,8 @@ import (
 
 type Config struct {
 	Port    string        `json:"port"`
-	EnvType string        `json:"envType"`
-	Timeout time.Duration `json:"timeout"`
+	EnvType string        `json:"env_type"`
+	Timeout time.Duration `json:"timeout_seconds"`
 }
 
 func LoadConfig(file string) (Config, error) {

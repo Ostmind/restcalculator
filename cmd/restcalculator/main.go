@@ -7,10 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
 	"restcalculator/internal/config"
-	"restcalculator/internal/http-server/handlers/multiplying"
-	"restcalculator/internal/http-server/handlers/sum"
+	"restcalculator/internal/http-server/handlers"
 	"restcalculator/internal/http-server/middleware"
 	"restcalculator/internal/logger"
 	"restcalculator/internal/model"
@@ -31,13 +29,10 @@ func main() {
 
 	result := model.NewResult()
 
-	sumController := sum.New(sloger, result)
-
-	multController := multiplying.New(sloger, result)
+	controller := handlers.New(sloger, result)
 
 	echoInstance.Use(middleware.LogRequest)
-	echoInstance.POST("/sum", sumController.Sum)
-	echoInstance.POST("/mult", multController.Multiplying)
+	echoInstance.POST("/sum/{operation}", controller.Calculation)
 
 	server := &http.Server{
 		Addr:         ":" + config.Port,
@@ -47,21 +42,26 @@ func main() {
 
 	startErr := make(chan error)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-
 	go func() {
 		if err := echoInstance.StartServer(server); err != nil {
 			log.Fatal("server error", slog.Any("error", err))
-			startErr <- err
+			close(startErr)
 		}
 	}()
 
-	<-ctx.Done()
+	stop := make(chan os.Signal, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout*time.Second)
 	defer cancel()
-	if err := echoInstance.Shutdown(ctx); err != nil {
-		echoInstance.Logger.Fatal(err)
+
+	select {
+	case <-startErr:
+	case <-stop:
+		log.Info("stopping server")
+		if err := echoInstance.Shutdown(ctx); err != nil {
+			log.Error("failed to gracefully shutdown server", slog.Any("error", err))
+		}
+
+		log.Info("server stopped")
 	}
 
 }

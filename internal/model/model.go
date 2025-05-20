@@ -1,5 +1,7 @@
 package model
 
+import "sync"
+
 type Calculation struct {
 	Numbers   []float64 `json:"numbers"`
 	Operation string    `json:"operation"`
@@ -8,6 +10,7 @@ type Calculation struct {
 
 type Results struct {
 	UserValues map[string][]Calculation
+	Mutex      sync.Mutex
 }
 
 type Request struct {
