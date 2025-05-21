@@ -25,6 +25,10 @@ const (
 
 func makeCalc(num []float64, operation string, res *model.Results, cookie string, err chan struct{}, ok chan model.Calculation) {
 	var calculation model.Calculation
+
+	defer close(err)
+	defer close(ok)
+
 	switch operation {
 	case SUM:
 		var sum float64
