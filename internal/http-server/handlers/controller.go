@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"restcalculator/internal/model"
@@ -19,18 +20,18 @@ func New(log *slog.Logger, res *model.Results) *Controller {
 }
 
 const (
-	SUM  = "+"
-	MULT = "*"
+	SUM_OPERATION  = "+"
+	MULT_OPERATION = "*"
 )
 
-func makeCalc(num []float64, operation string, res *model.Results, cookie string, err chan struct{}, ok chan model.Calculation) {
-	var calculation model.Calculation
-
-	defer close(err)
-	defer close(ok)
+func makeCalc(num []float64, operation string, res *model.Results, cookie string) (model.Calculation, error) {
+	var (
+		err         error
+		calculation model.Calculation
+	)
 
 	switch operation {
-	case SUM:
+	case SUM_OPERATION:
 		var sum float64
 
 		for i := range num {
@@ -46,13 +47,11 @@ func makeCalc(num []float64, operation string, res *model.Results, cookie string
 		res.UserValues[cookie] = append(res.UserValues[cookie], calculation)
 		res.Mutex.Unlock()
 
-		ok <- calculation
-
-	case MULT:
+	case MULT_OPERATION:
 		var mult float64 = 1
 
 		for i := range num {
-			mult += num[i]
+			mult *= num[i]
 
 			calculation.Numbers = append(calculation.Numbers, num[i])
 		}
@@ -64,20 +63,16 @@ func makeCalc(num []float64, operation string, res *model.Results, cookie string
 		res.UserValues[cookie] = append(res.UserValues[cookie], calculation)
 		res.Mutex.Unlock()
 
-		ok <- calculation
-
 	default:
-		err <- struct{}{}
+		err = errors.New("No Operation")
 	}
+
+	return calculation, err
 }
 
 func (ctr Controller) Calculation(c echo.Context) error {
 
-	var (
-		req          model.Request
-		errorChannel chan struct{}
-		resulChannel chan model.Calculation
-	)
+	var req model.Request
 
 	ctr.logger.Debug("Get Request for Sum")
 
@@ -93,15 +88,10 @@ func (ctr Controller) Calculation(c echo.Context) error {
 
 	operation := c.Param("operation")
 
-	go makeCalc(req.Value, operation, ctr.result, userCookie.Value, errorChannel, resulChannel)
-
-	select {
-	case calculation := <-resulChannel:
-		return c.JSON(http.StatusOK, calculation)
-
-	case <-errorChannel:
+	res, err := makeCalc(req.Value, operation, ctr.result, userCookie.Value)
+	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
-
 	}
 
+	return c.JSON(http.StatusOK, res)
 }

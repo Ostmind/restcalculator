@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"restcalculator/internal/config"
 	"restcalculator/internal/http-server/handlers"
 	"restcalculator/internal/http-server/middleware"
@@ -18,43 +19,45 @@ import (
 func main() {
 	echoInstance := echo.New()
 
-	config, err := config.LoadConfig("internal/config/config.json")
+	cfg, err := config.LoadConfig("internal/config/config.json")
 	if err != nil {
 		log.Fatal("No config cannot start server", slog.Any("error", err))
 	}
 
-	sloger := logger.SetupLogger(config.EnvType)
+	sloger := logger.SetupLogger(cfg.EnvType)
 	sloger.Info("starting calculator",
-		slog.String("env", config.EnvType))
+		slog.String("env", cfg.EnvType))
 
 	result := model.NewResult()
 
 	controller := handlers.New(sloger, result)
 
 	echoInstance.Use(middleware.LogRequest)
-	echoInstance.POST("/sum/{operation}", controller.Calculation)
+	echoInstance.POST("/{operation}", controller.Calculation)
 
 	server := &http.Server{
-		Addr:         ":" + config.Port,
-		ReadTimeout:  config.Timeout * time.Second,
-		WriteTimeout: config.Timeout * time.Second,
+		Addr:         ":" + cfg.Port,
+		ReadTimeout:  cfg.ShutdownTimeout * time.Second,
+		WriteTimeout: cfg.ShutdownTimeout * time.Second,
 	}
 
 	startErr := make(chan error)
 
 	go func() {
 		if err := echoInstance.StartServer(server); err != nil {
-			log.Fatal("server error", slog.Any("error", err))
-			close(startErr)
+			startErr <- err
 		}
 	}()
 
 	stop := make(chan os.Signal, 1)
-	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout*time.Second)
+	signal.Notify(stop, os.Interrupt)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout*time.Second)
 	defer cancel()
 
 	select {
-	case <-startErr:
+	case err = <-startErr:
+		log.Fatal("server error", slog.Any("error", err))
 	case <-stop:
 		log.Info("stopping server")
 		if err := echoInstance.Shutdown(ctx); err != nil {
