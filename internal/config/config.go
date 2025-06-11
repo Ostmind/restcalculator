@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Port            string        `json:"port"`
+	Port            int           `json:"port"`
 	EnvType         string        `json:"env_type"`
 	ShutdownTimeout time.Duration `json:"timeout_seconds"`
 }
